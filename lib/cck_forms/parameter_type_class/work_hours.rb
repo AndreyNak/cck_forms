@@ -209,16 +209,16 @@ class CckForms::ParameterTypeClass::WorkHours
     def build_form(form_builder, template = false, options = {})
       form_builder.object = self
 
-      open_time_form = form_builder.fields_for(:open_time) { |time_form| build_time_form(time_form, open_time) }
-      close_time_form = form_builder.fields_for(:close_time) { |time_form| build_time_form(time_form, close_time) }
+      open_time_form = form_builder.fields_for(:open_time) { |time_form| build_time_form(time_form, open_time, 'open') }
+      close_time_form = form_builder.fields_for(:close_time) { |time_form| build_time_form(time_form, close_time, 'close') }
 
       input_multi_mark = if options[:multi_days]
                            "data-multi-days='true'"
                          end
 
       if template
-        header = ['<ul class="nav nav-pills">']
-        CckForms::ParameterTypeClass::WorkHours::DAYS.each { |day| header << '<li class="nav-item"><a class="nav-link" href="javascript:void(0)"><input name="' + form_builder.object_name + '[days]" type="checkbox" value="' + day + '" /> ' + CckForms::ParameterTypeClass::WorkHours.day_to_short(day) + '</a></li>' }
+        header = ['<ul class="info__item-checkboxes">']
+        CckForms::ParameterTypeClass::WorkHours::DAYS.each { |day| header << '<li class="info__item-checkbox"><input  type="checkbox" value="' + day + '" id="' + day +'" /> ' + '<label for="' + day +'">' + CckForms::ParameterTypeClass::WorkHours.day_to_short(day) + '</label>' + '</li>' }
         header = header.push('</ul>').join
       else
         header = sprintf '<strong>%s</strong>:%s', CckForms::ParameterTypeClass::WorkHours::day_to_short(day), form_builder.hidden_field(:day)
@@ -226,29 +226,45 @@ class CckForms::ParameterTypeClass::WorkHours
 
       open_until_last_client_html = unless options[:hide_open_until_last_client]
                                       <<HTML
-                    <div class="checkbox">
+                    <div class="info__item-checkbox">
                       <label class="form_work_hours_option">#{form_builder.check_box :open_until_last_client} <nobr>#{I18n.t 'cck_forms.work_hours.until_last_client'}</nobr></label>
                     </div>
 HTML
                                     end
 
       <<HTML
-        <div #{input_multi_mark} class="form_work_hours_day#{template ? ' form_work_hours_day_template" style="display: none' : ''}">
-          <div class="form_work_hours_time">
+        <div #{input_multi_mark} class="form_work_hours_day#{template ? ' form_work_hours_day_template" style="display: none"' : ''}">
+          <div class="info__item-time">
             #{header}
           </div>
-          <div class="form_work_hours_time">
+          <div class="info__item-time">
             <table width="100%">
               <tr>
-                <td width="60%" class="form-inline">
-                  #{I18n.t 'cck_forms.work_hours.time_from'} #{open_time_form}
-                  #{I18n.t 'cck_forms.work_hours.time_till'} #{close_time_form}
-                </td>
-                <td width="40%">
-                    <div class="checkbox">
-                      <label class="form_work_hours_option">#{form_builder.check_box :open_24_hours} #{I18n.t 'cck_forms.work_hours.24h'}</label>
+                <td>
+                  <div class="info__item-selects">
+                    <div class="info__item-select">
+                      <div class="info__item-select-comment">
+                        #{I18n.t 'cck_forms.work_hours.time_from'}
+                      </div>
+                       #{open_time_form}
                     </div>
+                    <div class="info__item-select">
+                      <div class="info__item-select-comment">
+                        #{I18n.t 'cck_forms.work_hours.time_till'}
+                      </div>
+                       #{close_time_form}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <ul class="info__item-checkboxes">
+                    <li class="info__item-checkbox">
+                      <label class="form_work_hours_option">#{form_builder.check_box :open_24_hours} #{I18n.t 'cck_forms.work_hours.24h'}</label>
+                    </li>
                     #{open_until_last_client_html}
+                  </ul>
                 </td>
               </tr>
             </table>
@@ -279,21 +295,25 @@ HTML
     end
 
     # SELECTs: [18]:[45]
-    def build_time_form(form_builder, value)
+    def build_time_form(form_builder, value, id)
       hours = []
       24.times { |hour| hours << [hour.to_s.rjust(2, '0'), hour] }
 
       minutes = []
-      (60/5).times { |minute| minutes << [(minute *= 5).to_s.rjust(2, '0'), minute] }
+      (60 / 5).times { |minute| minutes << [(minute *= 5).to_s.rjust(2, '0'), minute] }
 
-      sprintf(
-          '%s : %s',
-          form_builder.select(:hours, hours, {include_blank: true, selected: value.try(:[], 'hours')}, class: 'form-control input-sm', style: 'width: 60px'),
-          form_builder.select(:minutes, minutes, {include_blank: true, selected: value.try(:[], 'minutes')}, class: 'form-control input-sm', style: 'width: 60px')
-      ).html_safe
+      html = <<-HTML
+          <div class="select select-full-time" id="info-hours-container-#{id}">
+            #{form_builder.select(:hours, hours, { selected: value.try(:[], 'hours') }, id: "info-hours-#{id}")}
+          </div>
+            :
+          <div class="select  select-full-time" id="info-minutes-container-#{id}">
+            #{form_builder.select(:minutes, minutes, { selected: value.try(:[], 'minutes') }, id: "info-minutes-#{id}")}
+          </div>
+      HTML
+
+      html.html_safe
     end
-
-
 
     public
 
@@ -347,6 +367,5 @@ HTML
         mongoize_time(time)
       end
     end
-
   end
 end
