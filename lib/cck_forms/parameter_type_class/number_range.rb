@@ -98,8 +98,6 @@ class CckForms::ParameterTypeClass::NumberRange
     criteria.where("#{field}.ranges.#{query}" => true)
   end
 
-
-
   private
 
   def form_field(form_builder_field, field_name, options)
@@ -110,12 +108,14 @@ class CckForms::ParameterTypeClass::NumberRange
 
   def build_for_admin_interface_form(form_builder, options)
     delimiter = options[:delimeter].presence || ' — '
+    disable_delimiter = options[:disable_delimiter] && ''
+    parent_class = options[:parent_class]
 
-    result = ['<div class="form-inline">']
+    result = ["<div class='form-inline #{parent_class}'>"]
     form_builder.fields_for :value do |ff|
       from_field = form_field ff, :from, options
       till_field = form_field ff, :till, options
-      result << [from_field, till_field].join(delimiter).html_safe
+      result << [from_field, till_field].join(disable_delimiter || delimiter).html_safe
     end
     result << '</div>'
     result.join.html_safe
